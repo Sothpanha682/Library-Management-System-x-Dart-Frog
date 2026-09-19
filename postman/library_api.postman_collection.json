@@ -1,0 +1,377 @@
+{
+  "info": {
+    "_postman_id": "9b12d345-a678-4e90-bcde-f1234567890a",
+    "name": "University Library Management System API",
+    "description": "Comprehensive REST API Collection for University Library Management System built with Dart Frog and MySQL.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alex Johnson\",\n  \"email\": \"alex.johnson@library.edu\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login (Student)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student1@library.edu\",\n  \"password\": \"Student@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('admin_token', jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@library.edu\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current Profile (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Books",
+      "item": [
+        {
+          "name": "Get All Books (with Pagination & Filter)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/books?category=Computer Science&page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "books"],
+              "query": [
+                { "key": "category", "value": "Computer Science" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Books by Query",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/books/search?q=Algorithms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "books", "search"],
+              "query": [
+                { "key": "q", "value": "Algorithms" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Book by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/books/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "books", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Borrowings",
+      "item": [
+        {
+          "name": "Borrow Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"book_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/borrowings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "borrowings"]
+            }
+          }
+        },
+        {
+          "name": "Get My Borrowings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/borrowings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "borrowings"]
+            }
+          }
+        },
+        {
+          "name": "Return Borrowed Book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/borrowings/1/return",
+              "host": ["{{base_url}}"],
+              "path": ["api", "borrowings", "1", "return"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Reservations",
+      "item": [
+        {
+          "name": "Create Reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"book_id\": 6\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reservations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "Get My Reservations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reservations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Reservation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reservations/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Admin Endpoints",
+      "item": [
+        {
+          "name": "Admin Add Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Compilers: Principles, Techniques, and Tools\",\n  \"author\": \"Alfred V. Aho, Monica S. Lam, Ravi Sethi\",\n  \"category\": \"Computer Science\",\n  \"isbn\": \"978-0321486813\",\n  \"description\": \"Classic Dragon Book for university computer science compiler design courses.\",\n  \"quantity\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/books",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "books"]
+            }
+          }
+        },
+        {
+          "name": "Admin Update Book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Introduction to Algorithms (4th Edition)\",\n  \"author\": \"Thomas H. Cormen, Charles E. Leiserson\",\n  \"category\": \"Computer Science\",\n  \"isbn\": \"978-0262046305\",\n  \"quantity\": 8,\n  \"available_quantity\": 8\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/books/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "books", "1"]
+            }
+          }
+        },
+        {
+          "name": "Admin Delete Book",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/books/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "books", "1"]
+            }
+          }
+        },
+        {
+          "name": "Admin Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "Admin Get All Borrowings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/borrowings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "borrowings"]
+            }
+          }
+        },
+        {
+          "name": "Admin Get All Reservations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/reservations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "reservations"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

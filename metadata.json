@@ -1,0 +1,6 @@
+{
+  "name": "Library Management System",
+  "description": "Full-stack Library Management System with Flutter frontend, Dart Frog REST API, and MySQL database.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
