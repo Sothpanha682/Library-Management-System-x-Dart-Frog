@@ -6,11 +6,11 @@ class ApiEndpoints {
   // Android Emulator uses 10.0.2.2 to reach host machine
   // iOS Simulator / Desktop / Web uses localhost
   static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:8080';
+    if (kIsWeb) return 'http://localhost:8081';
     try {
-      if (Platform.isAndroid) return 'http://10.0.2.2:8080';
+      if (Platform.isAndroid) return 'http://10.0.2.2:8081';
     } catch (_) {}
-    return 'http://localhost:8080';
+    return 'http://localhost:8081';
   }
 
   // Auth

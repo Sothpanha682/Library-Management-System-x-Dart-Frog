@@ -22,7 +22,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   Book? _book;
   bool _isLoading = true;
   bool _isActionProcessing = false;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -33,7 +32,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   Future<void> _loadBook() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     final book = await context.read<BookProvider>().getBookById(widget.bookId);
@@ -122,9 +120,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final isAdmin = authProvider.isAdmin;
-
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(),

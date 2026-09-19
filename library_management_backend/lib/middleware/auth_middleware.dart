@@ -2,7 +2,6 @@ import 'package:dart_frog/dart_frog.dart';
 import '../auth/auth_context.dart';
 import '../auth/jwt_service.dart';
 import '../models/api_response.dart';
-import '../models/user.dart';
 import '../repositories/user_repository.dart';
 
 Middleware authRequiredMiddleware() {

@@ -3,10 +3,10 @@
 A modern, high-performance REST API backend built with **Dart Frog**, providing clean architecture and full transaction-safe support for library management.
 
 ## Tech Stack
-- **Framework**: Dart Frog 2.x
+- **Framework**: Dart Frog 1.2.x
 - **Language**: Dart 3.x
-- **Database**: MySQL 8.0+ via `mysql1` with transaction support
-- **Auth**: JWT (`dart_jsonwebtoken`) + Salted SHA-256 / Bcrypt password hashing
+- **Database**: MySQL 8.0+ / 8.4+ via `mysql_client` with transaction & `caching_sha2_password` support
+- **Auth**: JWT (`dart_jsonwebtoken`) + Salted SHA-256 / Bcrypt password verification
 - **Testing**: `package:test`, `mocktail`
 
 ## Directory Structure
@@ -23,7 +23,7 @@ library_management_backend/
 │       └── admin/               # Book CRUD, User list, All Borrowings & Reservations
 ├── lib/
 │   ├── models/                  # User, Book, Borrowing, Reservation, ApiResponse
-│   ├── database/                # Connection pooling, config, transactions
+│   ├── database/                # Connection pooling, config, transactions (mysql_client)
 │   ├── auth/                    # JWT service, password hasher, auth context
 │   ├── middleware/              # Auth verification & Admin role guard
 │   ├── repositories/            # SQL queries and transaction management
@@ -36,27 +36,33 @@ library_management_backend/
 
 ## Running the Backend
 
-1. Install dependencies:
+1. Install Dart Frog CLI globally:
+   ```bash
+   dart pub global activate dart_frog_cli
+   ```
+
+2. Install dependencies:
    ```bash
    dart pub get
    ```
 
-2. Copy `.env.example` to `.env` and set MySQL credentials:
+3. Configure environment (optional, defaults to `root` with no password on `127.0.0.1:3306`):
    ```bash
    cp .env.example .env
    ```
 
-3. Start server in development mode with live reload:
+4. Start server in development mode with live reload on port **8081**:
    ```bash
-   dart_frog dev
+   dart_frog dev --port 8081
    ```
-   Or run the compiled server directly:
+   Or run the compiled production build:
    ```bash
-   dart bin/server.dart
+   dart_frog build
+   dart build/bin/server.dart
    ```
-   Server will be available at `http://localhost:8080`.
+   Server will be available at `http://localhost:8081`.
 
-4. Run tests:
+5. Run tests:
    ```bash
    dart test
    ```

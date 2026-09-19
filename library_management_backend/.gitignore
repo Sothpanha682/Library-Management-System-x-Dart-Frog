@@ -1,5 +1,6 @@
 # Dart & Dart Frog
 .dart_tool/
+.dart_frog/
 .packages
 build/
 .pub-cache/
