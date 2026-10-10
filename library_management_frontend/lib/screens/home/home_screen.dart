@@ -4,6 +4,8 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/book_provider.dart';
+import '../../providers/borrowing_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/book_card.dart';
 import '../../widgets/empty_state_view.dart';
 import '../books/book_details_screen.dart';
@@ -22,14 +24,21 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BookProvider>().fetchBooks();
+      context.read<BorrowingProvider>().fetchMyBorrowings();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final authProvider = context.watch<AuthProvider>();
     final bookProvider = context.watch<BookProvider>();
+    final borrowingProvider = context.watch<BorrowingProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
     final user = authProvider.user;
+
+    final totalAvailable = bookProvider.books.where((b) => b.isAvailable).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -38,48 +47,77 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.primaryBlue.withOpacity(0.1),
+                color: theme.colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.school_rounded, color: AppTheme.primaryBlue, size: 20),
+              child: Icon(
+                Icons.school_rounded,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hello, ${user?.name.split(' ').first ?? 'Scholar'}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                Text(
-                  user?.role == 'admin' ? 'Library Administrator' : 'University Student',
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hello, ${user?.name.split(' ').first ?? 'Scholar'}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppTheme.textPrimaryLight,
+                    ),
+                  ),
+                  Text(
+                    user?.role == 'admin' ? 'Library Administrator' : 'University Student',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark ? const Color(0xFF94A3B8) : AppTheme.textSecondaryLight,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            tooltip: 'Toggle Theme',
+            icon: Icon(
+              themeProvider.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+              color: isDark ? const Color(0xFFFDE047) : const Color(0xFF475569),
+            ),
+            onPressed: () => themeProvider.toggleTheme(),
+          ),
+          IconButton(
+            tooltip: 'Search Catalog',
+            icon: const Icon(Icons.search_rounded),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const BookSearchScreen()),
               );
             },
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => bookProvider.fetchBooks(),
+        onRefresh: () async {
+          await Future.wait([
+            bookProvider.fetchBooks(),
+            borrowingProvider.fetchMyBorrowings(),
+          ]);
+        },
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
           children: [
-            // Search Bar Card
+            // Search Quick Bar Pill
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const BookSearchScreen()),
@@ -88,24 +126,50 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 6,
+                        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                        blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.search, color: AppTheme.textSecondary, size: 20),
-                      SizedBox(width: 12),
-                      Text(
-                        'Search books by title, author, or ISBN...',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                      Icon(
+                        Icons.search_rounded,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Search titles, authors, categories, or ISBN...',
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'M3',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -113,18 +177,27 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Hero Promotion / Announcement Card
+            // Hero Academic Promotion Card
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Container(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primaryBlue, Color(0xFF1E40AF)],
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF1E3A8A), Color(0xFF0F172A)]
+                        : const [AppTheme.primaryBlue, Color(0xFF1D4ED8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryBlue.withValues(alpha: isDark ? 0.4 : 0.25),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -135,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Text(
@@ -148,55 +221,118 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           const Text(
                             'Need course materials?',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Borrow textbooks for up to 14 days or place instant holds on unavailable titles.',
+                            'Borrow textbooks for 14 days or place instant holds on reserved catalog titles.',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
-                              fontSize: 12,
-                              height: 1.3,
+                              color: Colors.white.withValues(alpha: 0.88),
+                              fontSize: 12.5,
+                              height: 1.35,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Icon(Icons.auto_stories_rounded, size: 54, color: Colors.white.withOpacity(0.9)),
+                    const SizedBox(width: 14),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.auto_stories_rounded,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
 
-            // Category Filter Pills
+            // Quick Stats KPI Row
             const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildMetricTile(
+                      context,
+                      label: 'Catalog Total',
+                      value: '${bookProvider.books.length}',
+                      icon: Icons.library_books_rounded,
+                      color: theme.colorScheme.primary,
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildMetricTile(
+                      context,
+                      label: 'Available Now',
+                      value: '$totalAvailable',
+                      icon: Icons.check_circle_rounded,
+                      color: AppTheme.successGreen,
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildMetricTile(
+                      context,
+                      label: 'Active Loans',
+                      value: '${borrowingProvider.activeBorrowings.length}',
+                      icon: Icons.bookmark_added_rounded,
+                      color: AppTheme.accentAmber,
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Categories Header & Chips
+            const SizedBox(height: 18),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Categories',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                  Text(
+                    'Browse Categories',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppTheme.textPrimaryLight,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                   Text(
                     '${bookProvider.books.length} Books',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFF94A3B8) : AppTheme.textSecondaryLight,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             SizedBox(
-              height: 38,
+              height: 40,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -205,15 +341,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (context, index) {
                   final cat = AppConstants.bookCategories[index];
                   final isSelected = cat == bookProvider.selectedCategory;
-                  return ChoiceChip(
+                  final style = AppTheme.getCategoryStyle(cat, isDark: isDark);
+
+                  return FilterChip(
                     label: Text(cat),
                     selected: isSelected,
-                    selectedColor: AppTheme.primaryBlue,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : AppTheme.textPrimary,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 13,
+                    showCheckmark: false,
+                    avatar: Icon(
+                      isSelected ? Icons.check_circle_rounded : style.icon,
+                      size: 15,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
                     ),
+                    selectedColor: theme.colorScheme.primary,
+                    backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    labelStyle: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155)),
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      fontSize: 12.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     onSelected: (_) {
                       bookProvider.fetchBooks(category: cat);
                     },
@@ -222,12 +380,37 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Available Library Collection',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    'Library Collection',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppTheme.textPrimaryLight,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      bookProvider.selectedCategory,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 8),
@@ -242,7 +425,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: EmptyStateView(
-                  icon: Icons.error_outline,
+                  icon: Icons.error_outline_rounded,
                   title: 'Unable to Load Catalog',
                   subtitle: bookProvider.errorMessage!,
                   actionLabel: 'Try Again',
@@ -253,9 +436,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: EmptyStateView(
-                  icon: Icons.library_books_outlined,
+                  icon: Icons.library_books_rounded,
                   title: 'No Books in this Category',
-                  subtitle: 'Try selecting "All" or browse another category.',
+                  subtitle: 'Select "All" or browse another academic department.',
                   actionLabel: 'View All Books',
                   onAction: () => bookProvider.fetchBooks(category: 'All'),
                 ),
@@ -270,12 +453,62 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (_) => BookDetailsScreen(bookId: book.id),
                       ),
                     );
-                    bookProvider.fetchBooks();
+                    if (context.mounted) {
+                      bookProvider.fetchBooks();
+                    }
                   },
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMetricTile(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const Spacer(),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : AppTheme.textPrimaryLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFF94A3B8) : AppTheme.textSecondaryLight,
+            ),
+          ),
+        ],
       ),
     );
   }

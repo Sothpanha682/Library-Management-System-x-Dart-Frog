@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/book.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/book_provider.dart';
 import '../../providers/borrowing_provider.dart';
 import '../../providers/reservation_provider.dart';
@@ -50,7 +49,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     final confirmed = await ConfirmDialog.show(
       context,
       title: 'Borrow Book',
-      message: 'Would you like to borrow "${_book!.title}" for a standard 14-day loan period?',
+      message: 'Would you like to borrow "${_book!.title}" for a standard 14-day academic loan period?',
       confirmLabel: 'Confirm Loan',
     );
 
@@ -65,9 +64,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Book borrowed successfully! Track it in "My Books".'),
+        SnackBar(
+          content: const Text('Book borrowed successfully! Track it in "My Loans".'),
           backgroundColor: AppTheme.successGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       _loadBook();
@@ -76,6 +77,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         SnackBar(
           content: Text(borrowingProvider.errorMessage ?? 'Borrowing failed'),
           backgroundColor: AppTheme.errorRed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -86,8 +89,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
     final confirmed = await ConfirmDialog.show(
       context,
-      title: 'Place Hold / Reservation',
-      message: 'All physical copies are currently loaned out. Would you like to reserve "${_book!.title}"? You will receive priority when a copy is returned.',
+      title: 'Place Academic Hold',
+      message: 'All physical copies are currently checked out. Would you like to reserve "${_book!.title}"? You will be notified when a copy is returned.',
       confirmLabel: 'Place Hold',
     );
 
@@ -102,9 +105,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Reservation placed successfully! View in "Holds".'),
+        SnackBar(
+          content: const Text('Reservation placed successfully! View in "Holds".'),
           backgroundColor: AppTheme.successGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       _loadBook();
@@ -113,6 +118,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         SnackBar(
           content: Text(reservationProvider.errorMessage ?? 'Reservation failed'),
           backgroundColor: AppTheme.errorRed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -120,65 +127,80 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(title: const Text('Book Details')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_book == null) {
       return Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: Text('Book not found')),
+        appBar: AppBar(title: const Text('Book Details')),
+        body: const Center(child: Text('Book record not found')),
       );
     }
 
     final book = _book!;
+    final categoryStyle = AppTheme.getCategoryStyle(book.category, isDark: isDark);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Book Details'),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
               blurRadius: 10,
-              offset: const Offset(0, -4),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
         child: SafeArea(
           child: book.isAvailable
-              ? ElevatedButton.icon(
+              ? FilledButton.icon(
                   onPressed: _isActionProcessing ? null : _handleBorrow,
-                  icon: const Icon(Icons.bookmark_add_outlined),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.bookmark_add_rounded, size: 20),
                   label: _isActionProcessing
                       ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Borrow Book (14 Days)'),
+                      : const Text('Borrow Book (14 Days)', style: TextStyle(fontWeight: FontWeight.w700)),
                 )
               : OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.accentAmber,
                     side: const BorderSide(color: AppTheme.accentAmber, width: 1.5),
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: _isActionProcessing ? null : _handleReserve,
-                  icon: const Icon(Icons.hourglass_empty_rounded),
+                  icon: const Icon(Icons.hourglass_top_rounded, size: 18),
                   label: _isActionProcessing
                       ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentAmber),
                         )
-                      : const Text('All Copies Out • Reserve Book'),
+                      : const Text('All Copies Out • Place Hold', style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
         ),
       ),
@@ -187,30 +209,42 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hero Book Cover and Primary Specs
+            // Hero Book Cover & Info
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
-                    width: 120,
-                    height: 175,
-                    color: AppTheme.primaryBlue.withOpacity(0.08),
-                    child: book.coverImage != null && book.coverImage!.isNotEmpty
+                    width: 124,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          categoryStyle.backgroundColor,
+                          categoryStyle.backgroundColor.withValues(alpha: 0.8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: book.coverImage != null && book.coverImage!.trim().isNotEmpty
                         ? Image.network(
                             book.coverImage!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Center(
-                              child: Icon(Icons.menu_book, color: AppTheme.primaryBlue, size: 48),
-                            ),
+                            errorBuilder: (_, __, ___) => _buildFallbackHero(categoryStyle),
                           )
-                        : const Center(
-                            child: Icon(Icons.menu_book, color: AppTheme.primaryBlue, size: 48),
-                          ),
+                        : _buildFallbackHero(categoryStyle),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 18),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,36 +252,44 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.blueGrey.shade50,
+                          color: categoryStyle.backgroundColor,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
-                          book.category.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: Colors.blueGrey.shade700,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(categoryStyle.icon, size: 12, color: categoryStyle.textColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              book.category.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.4,
+                                color: categoryStyle.textColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         book.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AppTheme.textPrimary,
+                          color: isDark ? Colors.white : AppTheme.textPrimaryLight,
                           height: 1.25,
+                          letterSpacing: -0.2,
                         ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'by ${book.author}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textSecondary,
+                          color: isDark ? const Color(0xFF94A3B8) : AppTheme.textSecondaryLight,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -257,11 +299,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                         StatusBadge.unavailable(),
                       const SizedBox(height: 8),
                       Text(
-                        '${book.availableQuantity} of ${book.quantity} copies in library',
+                        '${book.availableQuantity} of ${book.quantity} physical copies in library',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                         ),
                       ),
                     ],
@@ -273,72 +315,161 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             const Divider(),
             const SizedBox(height: 16),
 
-            // Metadata Grid
+            // Metadata Grid Tiles
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailTile(
+                    title: 'ISBN CODE',
+                    value: book.isbn,
+                    icon: Icons.qr_code_2_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildDetailTile(
+                    title: 'LOAN DURATION',
+                    value: '14 Days standard',
+                    icon: Icons.calendar_month_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDetailTile(
+                    title: 'TOTAL COPIES',
+                    value: '${book.quantity} copies in catalog',
+                    icon: Icons.inventory_2_outlined,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildDetailTile(
+                    title: 'DEPARTMENT',
+                    value: book.category,
+                    icon: categoryStyle.icon,
+                    isDark: isDark,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 22),
+            Text(
+              'Synopsis & Academic Abstract',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : AppTheme.textPrimaryLight,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'ISBN NUMBER',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.textSecondary),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          book.isbn,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(width: 1, height: 32, color: Colors.grey.shade300),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'LOAN PERIOD',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.textSecondary),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          '14 Days',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-            const Text(
-              'Synopsis & Description',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              book.description != null && book.description!.isNotEmpty
-                  ? book.description!
-                  : 'No detailed description provided for this academic catalog entry.',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppTheme.textPrimary,
-                height: 1.5,
+              child: Text(
+                book.description != null && book.description!.trim().isNotEmpty
+                    ? book.description!
+                    : 'No abstract provided for this academic title in the library catalog.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                  height: 1.55,
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackHero(CategoryStyle style) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.auto_stories_rounded, color: style.textColor, size: 48),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              _book?.category ?? '',
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: style.textColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailTile({
+    required String title,
+    required String value,
+    required IconData icon,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: isDark ? const Color(0xFF94A3B8) : AppTheme.textSecondaryLight,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? const Color(0xFF94A3B8) : AppTheme.textSecondaryLight,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : AppTheme.textPrimaryLight,
+            ),
+          ),
+        ],
       ),
     );
   }

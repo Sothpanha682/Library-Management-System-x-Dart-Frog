@@ -16,7 +16,7 @@ class StatusBadge extends StatelessWidget {
     return const StatusBadge(
       label: 'Available',
       color: Color(0xFF16A34A),
-      icon: Icons.check_circle_outline,
+      icon: Icons.check_circle_outline_rounded,
     );
   }
 
@@ -24,7 +24,7 @@ class StatusBadge extends StatelessWidget {
     return const StatusBadge(
       label: 'Checked Out',
       color: Color(0xFFDC2626),
-      icon: Icons.remove_circle_outline,
+      icon: Icons.remove_circle_outline_rounded,
     );
   }
 
@@ -52,7 +52,7 @@ class StatusBadge extends StatelessWidget {
   }
 
   factory StatusBadge.reservation(String status) {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'available':
         return const StatusBadge(
           label: 'Ready for Pickup',
@@ -73,7 +73,7 @@ class StatusBadge extends StatelessWidget {
         );
       default:
         return const StatusBadge(
-          label: 'Pending',
+          label: 'Pending Hold',
           color: Color(0xFFD97706),
           icon: Icons.hourglass_top_rounded,
         );
@@ -82,26 +82,32 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: isDark ? 0.22 : 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.45 : 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: color),
+            Icon(icon, size: 13, color: color),
             const SizedBox(width: 4),
           ],
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11.5,
               fontWeight: FontWeight.w600,
               color: color,
+              letterSpacing: 0.1,
             ),
           ),
         ],

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/borrowing_provider.dart';
+import '../../providers/reservation_provider.dart';
 import '../books/book_search_screen.dart';
 import '../borrowing/my_borrowings_screen.dart';
 import '../profile/profile_screen.dart';
@@ -28,8 +29,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final authProvider = context.watch<AuthProvider>();
+    final borrowingProvider = context.watch<BorrowingProvider>();
+    final reservationProvider = context.watch<ReservationProvider>();
     final isAdmin = authProvider.isAdmin;
+
+    final activeLoansCount = borrowingProvider.activeBorrowings.length;
+    final activeHoldsCount = reservationProvider.activeReservations.length;
 
     return Scaffold(
       body: IndexedStack(
@@ -44,27 +51,45 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         destinations: [
           const NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: AppTheme.primaryBlue),
+            selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
           const NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search, color: AppTheme.primaryBlue),
+            icon: Icon(Icons.search_rounded),
+            selectedIcon: Icon(Icons.search_rounded),
             label: 'Search',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book, color: AppTheme.primaryBlue),
-            label: 'My Books',
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: activeLoansCount > 0,
+              label: Text('$activeLoansCount'),
+              child: const Icon(Icons.menu_book_outlined),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: activeLoansCount > 0,
+              label: Text('$activeLoansCount'),
+              child: const Icon(Icons.menu_book_rounded),
+            ),
+            label: 'My Loans',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.bookmark_border_outlined),
-            selectedIcon: Icon(Icons.bookmark, color: AppTheme.primaryBlue),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: activeHoldsCount > 0,
+              label: Text('$activeHoldsCount'),
+              backgroundColor: theme.colorScheme.tertiary,
+              child: const Icon(Icons.bookmark_border_rounded),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: activeHoldsCount > 0,
+              label: Text('$activeHoldsCount'),
+              backgroundColor: theme.colorScheme.tertiary,
+              child: const Icon(Icons.bookmark_rounded),
+            ),
             label: 'Holds',
           ),
           NavigationDestination(
-            icon: Icon(isAdmin ? Icons.admin_panel_settings_outlined : Icons.person_outline),
-            selectedIcon: Icon(isAdmin ? Icons.admin_panel_settings : Icons.person, color: AppTheme.primaryBlue),
+            icon: Icon(isAdmin ? Icons.admin_panel_settings_outlined : Icons.person_outline_rounded),
+            selectedIcon: Icon(isAdmin ? Icons.admin_panel_settings_rounded : Icons.person_rounded),
             label: isAdmin ? 'Admin' : 'Profile',
           ),
         ],
