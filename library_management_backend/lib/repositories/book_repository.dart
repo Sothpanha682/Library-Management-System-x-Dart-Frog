@@ -1,23 +1,22 @@
+import 'package:mongo_dart/mongo_dart.dart';
 import '../database/db_connection.dart';
 import '../models/book.dart';
 
 class BookRepository {
   Future<List<Book>> getAll({String? category, int page = 1, int limit = 50}) async {
     try {
+      final coll = await DbConnection.books;
       final offset = (page - 1) * limit;
-      String sql = 'SELECT * FROM books';
-      List<Object?> params = [];
 
+      var q = where.sortBy('id', descending: true);
       if (category != null && category.trim().isNotEmpty) {
-        sql += ' WHERE LOWER(category) = LOWER(?)';
-        params.add(category.trim());
+        q = where
+            .match('category', '^${RegExp.escape(category.trim())}\$', caseInsensitive: true)
+            .sortBy('id', descending: true);
       }
 
-      sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
-      params.addAll([limit, offset]);
-
-      final results = await DbConnection.query(sql, params);
-      return results.map((r) => Book.fromMap(r.fields)).toList();
+      final results = await coll.find(q.skip(offset).limit(limit)).toList();
+      return results.map((doc) => Book.fromMap(doc)).toList();
     } catch (_) {
       return [];
     }
@@ -25,17 +24,13 @@ class BookRepository {
 
   Future<int> count({String? category}) async {
     try {
-      String sql = 'SELECT COUNT(*) AS total FROM books';
-      List<Object?> params = [];
-
+      final coll = await DbConnection.books;
       if (category != null && category.trim().isNotEmpty) {
-        sql += ' WHERE LOWER(category) = LOWER(?)';
-        params.add(category.trim());
+        return await coll.count(
+          where.match('category', '^${RegExp.escape(category.trim())}\$', caseInsensitive: true),
+        );
       }
-
-      final results = await DbConnection.query(sql, params);
-      if (results.isEmpty) return 0;
-      return results.first['total'] as int? ?? 0;
+      return await coll.count();
     } catch (_) {
       return 0;
     }
@@ -43,24 +38,28 @@ class BookRepository {
 
   Future<List<Book>> search(String keyword) async {
     try {
-      final pattern = '%${keyword.trim()}%';
-      final sql = '''
-        SELECT * FROM books
-        WHERE title LIKE ? OR author LIKE ? OR category LIKE ? OR isbn LIKE ?
-        ORDER BY id DESC
-      ''';
-      final results = await DbConnection.query(sql, [pattern, pattern, pattern, pattern]);
-      return results.map((r) => Book.fromMap(r.fields)).toList();
-    } catch (_) {
+      final coll = await DbConnection.books;
+      final escaped = RegExp.escape(keyword.trim());
+      final q = where
+          .match('title', escaped, caseInsensitive: true)
+          .or(where.match('author', escaped, caseInsensitive: true))
+          .or(where.match('category', escaped, caseInsensitive: true))
+          .or(where.match('isbn', escaped, caseInsensitive: true))
+          .sortBy('id', descending: true);
+
+      final results = await coll.find(q).toList();
+      return results.map((doc) => Book.fromMap(doc)).toList();
+    } catch (e) {
       return [];
     }
   }
 
   Future<Book?> findById(int id) async {
     try {
-      final results = await DbConnection.query('SELECT * FROM books WHERE id = ? LIMIT 1', [id]);
-      if (results.isEmpty) return null;
-      return Book.fromMap(results.first.fields);
+      final coll = await DbConnection.books;
+      final doc = await coll.findOne(where.eq('id', id));
+      if (doc == null) return null;
+      return Book.fromMap(doc);
     } catch (_) {
       return null;
     }
@@ -68,9 +67,10 @@ class BookRepository {
 
   Future<Book?> findByIsbn(String isbn) async {
     try {
-      final results = await DbConnection.query('SELECT * FROM books WHERE isbn = ? LIMIT 1', [isbn.trim()]);
-      if (results.isEmpty) return null;
-      return Book.fromMap(results.first.fields);
+      final coll = await DbConnection.books;
+      final doc = await coll.findOne(where.eq('isbn', isbn.trim()));
+      if (doc == null) return null;
+      return Book.fromMap(doc);
     } catch (_) {
       return null;
     }
@@ -85,27 +85,26 @@ class BookRepository {
     String? coverImage,
     required int quantity,
   }) async {
+    final coll = await DbConnection.books;
     final now = DateTime.now();
-    final result = await DbConnection.query(
-      '''
-      INSERT INTO books (title, author, category, isbn, description, cover_image, quantity, available_quantity, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ''',
-      [
-        title.trim(),
-        author.trim(),
-        category.trim(),
-        isbn.trim(),
-        description?.trim(),
-        coverImage?.trim(),
-        quantity,
-        quantity,
-        now,
-        now,
-      ],
-    );
+    final id = await DbConnection.getNextSequence('bookId');
 
-    final id = result.insertId ?? 0;
+    final doc = {
+      'id': id,
+      'title': title.trim(),
+      'author': author.trim(),
+      'category': category.trim(),
+      'isbn': isbn.trim(),
+      'description': description?.trim(),
+      'cover_image': coverImage?.trim(),
+      'quantity': quantity,
+      'available_quantity': quantity,
+      'created_at': now,
+      'updated_at': now,
+    };
+
+    await coll.insertOne(doc);
+
     return Book(
       id: id,
       title: title.trim(),
@@ -123,27 +122,22 @@ class BookRepository {
 
   Future<bool> update(Book book) async {
     try {
+      final coll = await DbConnection.books;
       final now = DateTime.now();
-      final result = await DbConnection.query(
-        '''
-        UPDATE books
-        SET title = ?, author = ?, category = ?, isbn = ?, description = ?, cover_image = ?, quantity = ?, available_quantity = ?, updated_at = ?
-        WHERE id = ?
-        ''',
-        [
-          book.title,
-          book.author,
-          book.category,
-          book.isbn,
-          book.description,
-          book.coverImage,
-          book.quantity,
-          book.availableQuantity,
-          now,
-          book.id,
-        ],
+      final res = await coll.updateOne(
+        where.eq('id', book.id),
+        modify
+            .set('title', book.title)
+            .set('author', book.author)
+            .set('category', book.category)
+            .set('isbn', book.isbn)
+            .set('description', book.description)
+            .set('cover_image', book.coverImage)
+            .set('quantity', book.quantity)
+            .set('available_quantity', book.availableQuantity)
+            .set('updated_at', now),
       );
-      return (result.affectedRows ?? 0) > 0;
+      return res.nModified > 0;
     } catch (_) {
       return false;
     }
@@ -151,8 +145,9 @@ class BookRepository {
 
   Future<bool> delete(int id) async {
     try {
-      final result = await DbConnection.query('DELETE FROM books WHERE id = ?', [id]);
-      return (result.affectedRows ?? 0) > 0;
+      final coll = await DbConnection.books;
+      final res = await coll.deleteOne(where.eq('id', id));
+      return res.nRemoved > 0;
     } catch (_) {
       return false;
     }
@@ -160,15 +155,17 @@ class BookRepository {
 
   Future<bool> adjustAvailableQuantity(int bookId, int delta, [dynamic txCtx]) async {
     try {
-      final queryFunc = txCtx != null
-          ? (String sql, List<Object?> params) => txCtx.query(sql, params)
-          : (String sql, List<Object?> params) => DbConnection.query(sql, params);
+      final coll = await DbConnection.books;
+      var q = where.eq('id', bookId);
+      if (delta < 0) {
+        q = q.gte('available_quantity', -delta);
+      }
 
-      final result = await queryFunc(
-        'UPDATE books SET available_quantity = available_quantity + ?, updated_at = ? WHERE id = ? AND available_quantity + ? >= 0',
-        [delta, DateTime.now(), bookId, delta],
+      final res = await coll.updateOne(
+        q,
+        modify.inc('available_quantity', delta).set('updated_at', DateTime.now()),
       );
-      return (result.affectedRows ?? 0) > 0;
+      return res.nModified > 0;
     } catch (_) {
       return false;
     }

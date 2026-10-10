@@ -5,7 +5,7 @@ A modern, high-performance REST API backend built with **Dart Frog**, providing 
 ## Tech Stack
 - **Framework**: Dart Frog 1.2.x
 - **Language**: Dart 3.x
-- **Database**: MySQL 8.0+ / 8.4+ via `mysql_client` with transaction & `caching_sha2_password` support
+- **Database**: MongoDB 7.0+ (via Docker) with `mongo_dart` driver
 - **Auth**: JWT (`dart_jsonwebtoken`) + Salted SHA-256 / Bcrypt password verification
 - **Testing**: `package:test`, `mocktail`
 

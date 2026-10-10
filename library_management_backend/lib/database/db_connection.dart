@@ -1,121 +1,73 @@
-import 'package:mysql_client/mysql_client.dart';
+import 'package:mongo_dart/mongo_dart.dart';
 import 'db_config.dart';
 
-/// Wrapped Row representing a SQL result row compatible with both map and index lookups
-class DbRow {
-  final Map<String, dynamic> fields;
-  final List<dynamic> _indexedCols;
-
-  DbRow(this.fields, this._indexedCols);
-
-  dynamic operator [](dynamic key) {
-    if (key is int) {
-      return _indexedCols[key];
-    }
-    return fields[key];
-  }
-}
-
-/// Wrapped Results representing an iterable of DbRows with metadata
-class DbResults extends Iterable<DbRow> {
-  final List<DbRow> _rows;
-  final int? insertId;
-  final int? affectedRows;
-
-  DbResults({
-    required List<DbRow> rows,
-    this.insertId,
-    this.affectedRows,
-  }) : _rows = rows;
-
-  @override
-  Iterator<DbRow> get iterator => _rows.iterator;
-
-  @override
-  bool get isEmpty => _rows.isEmpty;
-
-  @override
-  bool get isNotEmpty => _rows.isNotEmpty;
-
-  @override
-  DbRow get first => _rows.first;
-
-  @override
-  int get length => _rows.length;
-}
-
-/// Database Manager wrapping MySQL connection and queries
+/// Database Manager wrapping MongoDB connection and collections
 class DbConnection {
-  static MySQLConnection? _connection;
+  static Db? _db;
 
-  static Future<MySQLConnection> getConnection() async {
-    if (_connection != null && _connection!.connected) {
-      return _connection!;
+  /// Retrieves or opens the MongoDB database connection
+  static Future<Db> getDb() async {
+    if (_db != null && _db!.isConnected) {
+      return _db!;
     }
 
-    final conn = await MySQLConnection.createConnection(
-      host: DbConfig.host == 'localhost' ? '127.0.0.1' : DbConfig.host,
-      port: DbConfig.port,
-      userName: DbConfig.user,
-      password: DbConfig.password,
-      databaseName: DbConfig.dbName,
-      secure: true,
-    );
-
-    await conn.connect();
-    _connection = conn;
-    return _connection!;
+    try {
+      final db = await Db.create(DbConfig.mongoUri);
+      await db.open();
+      _db = db;
+      return _db!;
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  static Future<DbResults> _execute(dynamic executor, String sql, [List<Object?>? values]) async {
-    IResultSet res;
-    if (values != null && values.isNotEmpty) {
-      final stmt = await executor.prepare(sql);
-      try {
-        res = await stmt.execute(values);
-      } finally {
-        await stmt.deallocate();
+  /// Shorthand to access a specific collection
+  static Future<DbCollection> getCollection(String collectionName) async {
+    final db = await getDb();
+    return db.collection(collectionName);
+  }
+
+  static Future<DbCollection> get users => getCollection('users');
+  static Future<DbCollection> get books => getCollection('books');
+  static Future<DbCollection> get borrowings => getCollection('borrowings');
+  static Future<DbCollection> get reservations => getCollection('reservations');
+  static Future<DbCollection> get counters => getCollection('counters');
+
+  /// Atomically generates the next auto-increment integer ID for a given sequence name
+  static Future<int> getNextSequence(String sequenceName) async {
+    final coll = await counters;
+    try {
+      final res = await coll.findAndModify(
+        query: where.eq('_id', sequenceName),
+        update: modify.inc('seq', 1),
+        returnNew: true,
+        upsert: true,
+      );
+      if (res != null && res['seq'] != null) {
+        return (res['seq'] as num).toInt();
       }
+    } catch (_) {}
+
+    // Fallback if findAndModify returns null
+    final existing = await coll.findOne(where.eq('_id', sequenceName));
+    if (existing == null) {
+      await coll.insertOne({'_id': sequenceName, 'seq': 1});
+      return 1;
     } else {
-      res = await executor.execute(sql);
+      final nextVal = ((existing['seq'] as num?)?.toInt() ?? 0) + 1;
+      await coll.updateOne(
+        where.eq('_id', sequenceName),
+        modify.set('seq', nextVal),
+      );
+      return nextVal;
     }
-
-    final dbRows = res.rows.map((r) {
-      final fields = r.typedAssoc();
-      final indexed = List.generate(res.cols.length, (i) => r.typedColAt(i));
-      return DbRow(fields, indexed);
-    }).toList();
-
-    return DbResults(
-      rows: dbRows,
-      insertId: res.lastInsertID.toInt(),
-      affectedRows: res.affectedRows.toInt(),
-    );
   }
 
-  static Future<DbResults> query(String sql, [List<Object?>? values]) async {
-    final conn = await getConnection();
-    return _execute(conn, sql, values);
-  }
-
-  static Future<T> transaction<T>(Future<T> Function(TransactionContext ctx) action) async {
-    final conn = await getConnection();
-    return conn.transactional((tx) async {
-      return action(TransactionContext(tx));
-    });
-  }
-
+  /// Closes database connection
   static Future<void> close() async {
-    await _connection?.close();
-    _connection = null;
-  }
-}
-
-class TransactionContext {
-  TransactionContext(this._tx);
-  final MySQLConnection _tx;
-
-  Future<DbResults> query(String sql, [List<Object?>? values]) {
-    return DbConnection._execute(_tx, sql, values);
+    if (_db != null && _db!.isConnected) {
+      await _db!.close();
+    }
+    _db = null;
   }
 }

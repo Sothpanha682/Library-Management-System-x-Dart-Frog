@@ -6,20 +6,18 @@ This guide details running the complete full-stack University Library Management
 - **Dart SDK** (v3.0.0 or higher)
 - **Flutter SDK** (v3.19.0 or higher)
 - **Dart Frog CLI** (`dart pub global activate dart_frog_cli`)
-- **MySQL 8.0+ / 8.4+** running locally (e.g. via Laragon, XAMPP, or Docker)
+- **Docker & Docker Compose** (running locally)
 
 ---
 
-## 1. Database Setup
+## 1. Database Setup (MongoDB on Docker)
 
-1. Start your MySQL service (e.g., in Laragon, click **Start All**).
-
-2. Run the database initialization and seed scripts:
+1. Start MongoDB and Mongo-Express via Docker Compose:
    ```bash
-   mysql -u root -p < database/schema.sql
-   mysql -u root -p < database/seed.sql
+   docker compose up -d
    ```
-   *(Both scripts automatically use the `library_management` database).*
+   - **MongoDB** will start on port `27017` and automatically run `database/mongo-init.js` to initialize collections, indexes, and seed data.
+   - **Mongo-Express Web UI** will be available at `http://localhost:8085` (User: `admin`, Password: `pass`).
 
    **Default Test Credentials Seeded:**
    - **Admin User**:

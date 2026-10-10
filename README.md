@@ -1,6 +1,6 @@
 # Full-Stack University Library Management System
 
-A production-grade, full-stack **University Library Management System** designed and engineered with **Flutter**, **Dart Frog**, **MySQL**, and **Material 3**.
+A production-grade, full-stack **University Library Management System** designed and engineered with **Flutter**, **Dart Frog**, **MongoDB (Docker)**, and **Material 3**.
 
 ---
 
@@ -15,16 +15,17 @@ Dart Frog REST API Backend
   ├── Routes (Auth, Books, Borrowings, Reservations, Admin)
   ├── Middleware (CORS, JWT Authentication, Role Guards)
   ├── Services (Domain Logic, Stock Math, Transaction Coordination)
-  ├── Repositories (Prepared SQL, mysql_client Connection Pool, Transactions)
+  ├── Repositories (mongo_dart driver, atomic operations, populates)
   ├── Models & Validation (Data Sanitization & Envelope Responses)
        │
-       │ TCP / MySQL 8.0+ Connection (InnoDB with caching_sha2_password support)
+       │ TCP / MongoDB 7.0 Connection (Docker container on Port 27017)
        ▼
-MySQL Relational Database (`library_management`)
+MongoDB Database (`library_management`)
   ├── users (Roles: student, admin)
   ├── books (ISBN, Stock, Available Copies)
   ├── borrowings (14-day loans, Overdue tracking)
-  └── reservations (Priority queue holds)
+  ├── reservations (Priority queue holds)
+  └── counters (Atomic auto-increment IDs)
 ```
 
 ---

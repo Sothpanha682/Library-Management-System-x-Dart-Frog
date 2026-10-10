@@ -1,3 +1,4 @@
+import 'package:mongo_dart/mongo_dart.dart';
 import '../auth/password_hasher.dart';
 import '../database/db_connection.dart';
 import '../models/user.dart';
@@ -5,14 +6,10 @@ import '../models/user.dart';
 class UserRepository {
   Future<User?> findById(int id) async {
     try {
-      final results = await DbConnection.query(
-        'SELECT id, name, email, password_hash, role, created_at, updated_at FROM users WHERE id = ? LIMIT 1',
-        [id],
-      );
-
-      if (results.isEmpty) return null;
-      final row = results.first;
-      return User.fromMap(row.fields);
+      final coll = await DbConnection.users;
+      final doc = await coll.findOne(where.eq('id', id));
+      if (doc == null) return null;
+      return User.fromMap(doc);
     } catch (_) {
       return null;
     }
@@ -20,14 +17,13 @@ class UserRepository {
 
   Future<User?> findByEmail(String email) async {
     try {
-      final results = await DbConnection.query(
-        'SELECT id, name, email, password_hash, role, created_at, updated_at FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1',
-        [email.trim()],
+      final coll = await DbConnection.users;
+      final cleanEmail = email.trim().toLowerCase();
+      final doc = await coll.findOne(
+        where.match('email', '^${RegExp.escape(cleanEmail)}\$', caseInsensitive: true),
       );
-
-      if (results.isEmpty) return null;
-      final row = results.first;
-      return User.fromMap(row.fields);
+      if (doc == null) return null;
+      return User.fromMap(doc);
     } catch (_) {
       return null;
     }
@@ -39,15 +35,23 @@ class UserRepository {
     required String password,
     String role = 'student',
   }) async {
+    final coll = await DbConnection.users;
     final passwordHash = PasswordHasher.hash(password);
     final now = DateTime.now();
+    final insertedId = await DbConnection.getNextSequence('userId');
 
-    final result = await DbConnection.query(
-      'INSERT INTO users (name, email, password_hash, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-      [name.trim(), email.trim().toLowerCase(), passwordHash, role, now, now],
-    );
+    final doc = {
+      'id': insertedId,
+      'name': name.trim(),
+      'email': email.trim().toLowerCase(),
+      'password_hash': passwordHash,
+      'role': role,
+      'created_at': now,
+      'updated_at': now,
+    };
 
-    final insertedId = result.insertId ?? 0;
+    await coll.insertOne(doc);
+
     return User(
       id: insertedId,
       name: name.trim(),
@@ -61,11 +65,9 @@ class UserRepository {
 
   Future<List<User>> getAll() async {
     try {
-      final results = await DbConnection.query(
-        'SELECT id, name, email, role, created_at, updated_at FROM users ORDER BY id ASC',
-      );
-
-      return results.map((row) => User.fromMap(row.fields)).toList();
+      final coll = await DbConnection.users;
+      final list = await coll.find(where.sortBy('id')).toList();
+      return list.map((doc) => User.fromMap(doc)).toList();
     } catch (_) {
       return [];
     }
@@ -73,11 +75,12 @@ class UserRepository {
 
   Future<bool> updateProfile(int id, {required String name}) async {
     try {
-      final result = await DbConnection.query(
-        'UPDATE users SET name = ?, updated_at = ? WHERE id = ?',
-        [name.trim(), DateTime.now(), id],
+      final coll = await DbConnection.users;
+      final res = await coll.updateOne(
+        where.eq('id', id),
+        modify.set('name', name.trim()).set('updated_at', DateTime.now()),
       );
-      return (result.affectedRows ?? 0) > 0;
+      return res.nModified > 0;
     } catch (_) {
       return false;
     }
