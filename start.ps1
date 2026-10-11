@@ -75,7 +75,18 @@ $PowerShellExe = (Get-Command powershell.exe).Source
 
 Write-Host "`n[3/4] Opening backend terminal..." -ForegroundColor Green
 
-$BackendCommand = "Set-Location -LiteralPath '$Backend'; dart_frog dev"
+# Free ports 8081 and 8181 if an old instance is still running
+@(8081, 8181) | ForEach-Object {
+    $conns = Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue
+    if ($conns) {
+        $conns | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object {
+            Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+Start-Sleep -Milliseconds 400
+
+$BackendCommand = "Set-Location -LiteralPath '$Backend'; dart_frog dev --port 8081"
 
 Start-Process -FilePath $PowerShellExe -ArgumentList @(
 "-NoExit",
@@ -99,6 +110,6 @@ $MobileCommand
 
 Write-Host "`n========================================" -ForegroundColor Green
 Write-Host " Both terminals launched!" -ForegroundColor Green
-Write-Host " Terminal 1: Dart Frog Backend" -ForegroundColor Cyan
+Write-Host " Terminal 1: Dart Frog Backend (http://localhost:8081)" -ForegroundColor Cyan
 Write-Host " Terminal 2: Flutter Mobile App" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Green

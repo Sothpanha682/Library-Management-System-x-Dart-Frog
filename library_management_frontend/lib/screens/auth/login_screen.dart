@@ -15,8 +15,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'student1@library.edu');
-  final _passwordController = TextEditingController(text: 'Student@123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
@@ -24,13 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  void _fillAccount(String email, String password) {
-    setState(() {
-      _emailController.text = email;
-      _passwordController.text = password;
-    });
   }
 
   Future<void> _handleLogin() async {
@@ -81,19 +74,31 @@ class _LoginScreenState extends State<LoginScreen> {
                     // University Emblem Header
                     Center(
                       child: Container(
-                        padding: const EdgeInsets.all(18),
+                        width: 90,
+                        height: 90,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+                          color: Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: theme.colorScheme.primary.withValues(alpha: isDark ? 0.4 : 0.2),
-                            width: 1.5,
+                            color: theme.colorScheme.primary.withValues(alpha: 0.25),
+                            width: 2,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
-                        child: Icon(
-                          Icons.local_library_rounded,
-                          size: 46,
-                          color: theme.colorScheme.primary,
+                        child: ClipOval(
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -226,45 +231,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               fontSize: 14,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 28),
-                    const Divider(),
-                    const SizedBox(height: 16),
-
-                    // Quick autofill demo accounts
-                    Text(
-                      'QUICK TEST ACCOUNTS (1-TAP AUTOFILL):',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? const Color(0xFF94A3B8) : AppTheme.textSecondaryLight,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        ActionChip(
-                          avatar: const Icon(Icons.shield_rounded, size: 16, color: AppTheme.accentAmber),
-                          label: const Text('Admin', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-                          onPressed: () => _fillAccount('admin@library.edu', 'Admin@123'),
-                        ),
-                        ActionChip(
-                          avatar: const Icon(Icons.school_rounded, size: 16, color: AppTheme.primaryBlueLight),
-                          label: const Text('Student 1', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-                          onPressed: () => _fillAccount('student1@library.edu', 'Student@123'),
-                        ),
-                        ActionChip(
-                          avatar: const Icon(Icons.school_rounded, size: 16, color: AppTheme.secondaryTeal),
-                          label: const Text('Student 2', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
-                          onPressed: () => _fillAccount('student2@library.edu', 'Student@123'),
                         ),
                       ],
                     ),

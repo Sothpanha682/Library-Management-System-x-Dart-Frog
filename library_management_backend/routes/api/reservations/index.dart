@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:dart_frog/dart_frog.dart';
-import '../../../lib/auth/auth_context.dart';
-import '../../../lib/models/api_response.dart';
-import '../../../lib/services/reservation_service.dart';
+import 'package:library_management_backend/auth/auth_context.dart';
+import 'package:library_management_backend/models/api_response.dart';
+import 'package:library_management_backend/services/reservation_service.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   final authContext = context.read<AuthContext>();

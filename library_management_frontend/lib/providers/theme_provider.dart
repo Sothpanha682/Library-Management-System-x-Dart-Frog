@@ -7,7 +7,7 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   static const String _themeKey = 'app_theme_mode';
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
 
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
@@ -17,12 +17,12 @@ class ThemeProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final savedTheme = prefs.getString(_themeKey);
       if (savedTheme != null) {
-        if (savedTheme == 'light') {
-          _themeMode = ThemeMode.light;
-        } else if (savedTheme == 'dark') {
+        if (savedTheme == 'dark') {
           _themeMode = ThemeMode.dark;
-        } else {
+        } else if (savedTheme == 'system') {
           _themeMode = ThemeMode.system;
+        } else {
+          _themeMode = ThemeMode.light;
         }
         notifyListeners();
       }

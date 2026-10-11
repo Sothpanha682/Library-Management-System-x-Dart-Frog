@@ -1,5 +1,5 @@
 import 'package:dart_frog/dart_frog.dart';
-import '../lib/models/api_response.dart';
+import 'package:library_management_backend/models/api_response.dart';
 
 Response onRequest(RequestContext context) {
   return ApiResponse.success(

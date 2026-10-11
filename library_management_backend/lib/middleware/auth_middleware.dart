@@ -7,6 +7,10 @@ import '../repositories/user_repository.dart';
 Middleware authRequiredMiddleware() {
   return (handler) {
     return (context) async {
+      if (context.request.method == HttpMethod.options) {
+        return handler(context);
+      }
+
       final authHeader = context.request.headers['Authorization'] ??
           context.request.headers['authorization'];
 
@@ -56,6 +60,10 @@ Middleware authRequiredMiddleware() {
 Middleware adminRequiredMiddleware() {
   return (handler) {
     return (context) async {
+      if (context.request.method == HttpMethod.options) {
+        return handler(context);
+      }
+
       try {
         final authContext = context.read<AuthContext>();
         if (!authContext.isAdmin) {

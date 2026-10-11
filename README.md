@@ -1,24 +1,24 @@
 # Full-Stack University Library Management System
 
-A production-grade, full-stack **University Library Management System** designed and engineered with **Flutter**, **Dart Frog**, **MongoDB (Docker)**, and **Material 3**.
+A production-grade, full-stack **University Library Management System** designed and engineered with **Flutter (Material 3)**, **Dart Frog (REST API)**, and **MongoDB (Docker)**.
 
 ---
 
-## Architecture Overview
+## 🏛️ Architecture Overview
 
-```
+```text
 Flutter Client UI (Mobile, Web, Desktop)
        │
        │ HTTP / JSON (REST API on Port 8081)
        ▼
 Dart Frog REST API Backend
   ├── Routes (Auth, Books, Borrowings, Reservations, Admin)
-  ├── Middleware (CORS, JWT Authentication, Role Guards)
+  ├── Middleware (CORS & Preflight, JWT Authentication, Admin Role Guards)
   ├── Services (Domain Logic, Stock Math, Transaction Coordination)
   ├── Repositories (mongo_dart driver, atomic operations, populates)
   ├── Models & Validation (Data Sanitization & Envelope Responses)
        │
-       │ TCP / MongoDB 7.0 Connection (Docker container on Port 27017)
+       │ TCP / MongoDB 7.0 (Docker container on Port 27017)
        ▼
 MongoDB Database (`library_management`)
   ├── users (Roles: student, admin)
@@ -30,34 +30,44 @@ MongoDB Database (`library_management`)
 
 ---
 
-## Key Features
+## ✨ Key Features
 
 ### 🎓 For Students
-- **Browse & Search**: Real-time search across titles, authors, categories, and ISBNs with category filters.
-- **Book Availability**: Live copy tracking showing total vs. currently available stock in the university stacks.
-- **Self-Service Borrowing**: 1-tap borrowing for standard 14-day loans with automated inventory decrement.
-- **Book Reservations / Holds**: When a book is completely checked out (0 copies), students can place priority holds.
+- **Browse & Search**: Real-time catalog search across titles, authors, categories, and ISBNs with category chips.
+- **Book Availability**: Live copy tracking showing total stock vs. currently available copies in university stacks.
+- **Self-Service Borrowing**: 1-tap borrowing for standard 14-day loans with automated atomic inventory decrement.
+- **Book Reservations / Holds**: Priority queue holds when a book is completely checked out (0 copies available).
 - **Book Returns**: Return books directly with atomic inventory replenishment.
-- **Overdue Monitoring**: Visual status badges flagging overdue materials and remaining due days.
+- **Overdue Monitoring**: Visual status badges flagging overdue materials and due-date counters.
 
 ### 🛡️ For Administrators
 - **Catalog Management**: Add, edit, and delete textbooks with ISBN validation, descriptions, and cover URLs.
 - **Borrowing Overview**: Real-time dashboard showing every active and completed loan across all university students.
-- **Hold Queues**: Monitor reserved titles and active reservations.
+- **Hold Queues**: Monitor reserved titles and active student hold requests.
 - **User Directory**: View registered students and staff accounts.
+
+### 🎨 Design & Mobile Branding
+- **Custom University Emblem Logo**: Integrated across Splash screen, Login, and Mobile Home headers.
+- **Full Mobile App Launcher Icons**: Standard launcher icons generated for **Android** (adaptive & mipmap densities), **iOS** (AppIcon set), and **Web** (PWA icons).
+- **Default White / Light Theme**: Clean, modern Material 3 academic palette with seamless toggle to Dark Mode.
+- **Automated Port & CORS Handling**: Robust preflight `OPTIONS` and error headers ensuring smooth web and mobile connectivity.
 
 ---
 
-## Directory Structure
+## 📁 Directory Structure
 
-```
+```text
 .
+├── docker-compose.yml                 # MongoDB 7.0 & Mongo Express services
+├── start.ps1                          # 1-click startup script (handles port cleanup & launches both apps)
+├── logo-lib.png                       # Source university library emblem
 ├── database/
-│   ├── schema.sql                     # Full MySQL DDL schema with constraints & indexes
-│   └── seed.sql                       # Seed data (16 books, 4 users, borrowings, reservations)
+│   ├── mongo-init.js                  # MongoDB seed script (users, books, borrowings, reservations)
+│   ├── schema.sql                     # SQL schema reference
+│   └── seed.sql                       # SQL seed data reference
 ├── library_management_backend/        # Dart Frog REST API server
 │   ├── routes/                        # API route handlers
-│   │   ├── _middleware.dart           # Global CORS middleware
+│   │   ├── _middleware.dart           # Global CORS & request logging middleware
 │   │   └── api/
 │   │       ├── auth/                  # /api/auth (register, login, me)
 │   │       ├── books/                 # /api/books (list, search, [id])
@@ -66,47 +76,39 @@ MongoDB Database (`library_management`)
 │   │       └── admin/                 # /api/admin (books, borrowings, reservations, users)
 │   ├── lib/
 │   │   ├── auth/                      # JWT service, password hasher, auth context
-│   │   ├── database/                  # Connection pooling, config, transactions (mysql_client)
-│   │   ├── middleware/                # Route security & role guards
-│   │   ├── models/                    # Domain models & standard ApiResponse
-│   │   ├── repositories/              # Prepared SQL statements & transactions
+│   │   ├── database/                  # MongoDB connection pool & atomic sequences
+│   │   ├── middleware/                # CORS, JWT auth, and role guard middlewares
+│   │   ├── models/                    # Domain models & standard ApiResponse envelope
+│   │   ├── repositories/              # MongoDB repositories with atomic operations
 │   │   ├── services/                  # Business logic rules enforcement
 │   │   └── validation/                # Email, password, ISBN, and quantity validators
-│   └── test/                          # Unit and integration tests
-├── library_management_frontend/       # Flutter Application (Android, Web, Desktop)
+│   └── test/                          # Unit & integration tests
+├── library_management_frontend/       # Flutter Application (Android, iOS, Web, Windows)
+│   ├── assets/images/                 # App logo & icon assets
 │   ├── lib/
-│   │   ├── core/                      # Constants (endpoints: 8081), theme, auth token storage
+│   │   ├── core/                      # Constants, theme palette, token storage
 │   │   ├── models/                    # User, Book, Borrowing, Reservation models
-│   │   ├── services/                  # API communication layer
-│   │   ├── providers/                 # Provider state management
-│   │   ├── widgets/                   # Reusable UI components & dialogs
+│   │   ├── services/                  # HTTP client & API communication layer
+│   │   ├── providers/                 # State management (Auth, Books, Borrowings, Theme)
+│   │   ├── widgets/                   # BookCard, EmptyState, StatusBadge, ConfirmDialog
 │   │   └── screens/                   # Splash, Auth, Home, Search, Loans, Holds, Admin
-│   └── test/                          # Widget and model unit tests
-├── postman/
-│   └── library_api.postman_collection.json # Complete API collection with environment vars
-└── docs/
-    ├── ARCHITECTURE.md                # System design & layer decoupling
-    ├── DATABASE.md                    # Data dictionary & transaction rules
-    ├── API_DOCUMENTATION.md           # REST endpoint specs & payloads
-    ├── SETUP_GUIDE.md                 # Complete guide to running the project
-    └── FIGMA_DESIGN_SYSTEM.md         # UI color tokens, typography & components
+│   └── test/                          # Unit & widget tests
+└── postman/
+    └── library_api.postman_collection.json # API collection for manual testing
 ```
 
 ---
 
-## Quick Start Guide
+## 🚀 Quick Start Guide
 
-### 1. Database Setup (MySQL 8.0+ / 8.4+)
-Create the schema and seed the initial dataset:
-
+### 1. Start MongoDB (Docker)
+Ensure Docker Desktop is running, then start MongoDB:
 ```bash
-# Initialize schema and seed data
-mysql -u root -p < database/schema.sql
-mysql -u root -p < database/seed.sql
+docker compose up -d
 ```
-*(Or import `database/schema.sql` followed by `database/seed.sql` inside phpMyAdmin/Laragon/Workbench).*
+MongoDB will start on port `27017` and seed the database with initial users, textbooks, and borrowing records.
 
-**Pre-seeded Test Accounts:**
+**Pre-seeded Accounts:**
 | Role | Email | Password |
 |---|---|---|
 | **Admin** | `admin@library.edu` | `Admin@123` |
@@ -116,23 +118,29 @@ mysql -u root -p < database/seed.sql
 
 ---
 
-### 2. Start Backend API
-Ensure Dart Frog CLI is activated globally:
-```bash
-dart pub global activate dart_frog_cli
+### 2. 1-Click Launch (Recommended)
+Run the PowerShell startup script from the project root:
+```powershell
+./start.ps1
 ```
+This script automatically:
+1. Installs backend and frontend dependencies (`pub get`).
+2. Cleans up any stale processes on ports `8081` and `8181`.
+3. Opens **Terminal 1** running the Dart Frog backend dev server on `http://localhost:8081`.
+4. Opens **Terminal 2** running the Flutter application.
 
-Start the dev server on port **8081**:
+---
+
+### 3. Manual Startup
+
+#### Backend
 ```bash
 cd library_management_backend
 dart pub get
 dart_frog dev --port 8081
-# Server running at http://localhost:8081
 ```
 
----
-
-### 3. Run Flutter App
+#### Frontend
 ```bash
 cd library_management_frontend
 flutter pub get
@@ -140,33 +148,35 @@ flutter pub get
 # Run on Chrome (Web):
 flutter run -d chrome
 
-# Run on Android (Physical device via USB):
-adb reverse tcp:8081 tcp:8081
-flutter run
-
-# Run on Android Emulator:
-flutter run
-
 # Run on Windows Desktop:
 flutter run -d windows
+
+# Run on Android:
+flutter run
 ```
 
-> **Note on Network Ports**: 
-> The backend runs on port `8081` to avoid conflicts with system services.
-> - **Web / Desktop**: connects to `http://localhost:8081`
-> - **Android Emulator**: automatically connects to `http://10.0.2.2:8081`
-> - **Physical Android Phone**: run `adb reverse tcp:8081 tcp:8081` over USB
+> **Note on Mobile Network Routing**:
+> - **Web & Desktop**: Connects directly to `http://localhost:8081`.
+> - **Android Emulator**: Automatically routes to `http://10.0.2.2:8081`.
+> - **Physical Android Phone**: Run `adb reverse tcp:8081 tcp:8081` over USB.
 
 ---
 
-### 4. Run Tests
-- **Backend Tests**:
-  ```bash
-  cd library_management_backend
-  dart test
-  ```
-- **Frontend Tests**:
-  ```bash
-  cd library_management_frontend
-  flutter test
-  ```
+## 🧪 Running Tests
+
+### Backend Tests
+```bash
+cd library_management_backend
+dart test
+```
+
+### Frontend Tests
+```bash
+cd library_management_frontend
+flutter test
+```
+
+---
+
+## 📄 License
+This project is licensed under the MIT License.

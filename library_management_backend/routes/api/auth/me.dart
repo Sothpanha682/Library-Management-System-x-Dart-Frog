@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:dart_frog/dart_frog.dart';
-import '../../../lib/auth/auth_context.dart';
-import '../../../lib/middleware/auth_middleware.dart';
-import '../../../lib/models/api_response.dart';
-import '../../../lib/services/auth_service.dart';
+import 'package:library_management_backend/auth/auth_context.dart';
+import 'package:library_management_backend/middleware/auth_middleware.dart';
+import 'package:library_management_backend/models/api_response.dart';
+import 'package:library_management_backend/services/auth_service.dart';
 
 Handler middleware(Handler handler) {
   return handler.use(authRequiredMiddleware());
